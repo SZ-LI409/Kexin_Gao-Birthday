@@ -21,27 +21,12 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            
-            /* --- 布局核心修改开始 --- */
-            
-            /* 1. 改为顶部对齐，防止小屏居中导致内容被切 */
-            justify-content: flex-start; 
-            
-            /* 2. 顶部留出适量空间，不要太多 */
-            padding-top: 30px; 
-            
-            /* 3. 底部增加留白，确保最后的内容能滑上来 */
-            padding-bottom: 80px;
-            
-            /* 4. 最小高度为屏幕高度，内容多时自动延伸 */
-            min-height: 100vh;
-            
-            /* 5. 允许垂直滚动 (pan-y)，解除之前的锁定 */
-            touch-action: pan-y; 
+            justify-content: flex-start; /* 顶部对齐 */
+            padding-top: 30px;
+            padding-bottom: 80px; /* 底部留白 */
+            min-height: 100vh; /* 允许高度延伸 */
+            touch-action: pan-y; /* 允许垂直滚动 */
             overflow-y: auto; 
-            
-            /* --- 布局核心修改结束 --- */
-            
             box-sizing: border-box;
         }
 
@@ -52,7 +37,7 @@
             max-width: 200px;
             display: flex;
             justify-content: center;
-            flex-shrink: 0; /* 防止Logo被挤压 */
+            flex-shrink: 0;
         }
 
         .logo-container img {
@@ -64,7 +49,6 @@
         /* 示波器屏幕 */
         #screen-frame {
             width: 85vw;
-            /* 给定一个固定高度，避免太高占满屏幕 */
             height: 300px; 
             max-height: 35vh;
             border: 4px solid #333;
@@ -162,14 +146,14 @@
             margin-bottom: 20px;
         }
 
-        /* 调试信息 */
+        /* 调试信息样式 */
         #debug-log {
             font-size: 12px;
-            color: #ff4444;
             margin-top: 10px;
             max-width: 90%;
             word-wrap: break-word;
             line-height: 1.4;
+            /* 默认留空，颜色由JS控制 */
         }
     </style>
 </head>
@@ -227,8 +211,9 @@
         resize();
 
         function playMusic() {
-            debugLog.innerText = "Attempting to play...";
-            debugLog.style.color = "#ffff00";
+            // 修改点 1: 点击后提示改为“Hold on”，颜色为白色
+            debugLog.innerText = "Hold on";
+            debugLog.style.color = "#ffffff";
 
             bgm.volume = 1.0;
             const playPromise = bgm.play();
@@ -238,15 +223,18 @@
                     playBtn.innerText = "HAPPY BIRTHDAY!";
                     playBtn.style.backgroundColor = "#fff"; 
                     playBtn.disabled = true;
-        
-                    debugLog.style.color = "#00ff00";
+                    
+                    // 修改点 2: 播放成功后清空提示文字，不需要额外显示
+                    debugLog.innerText = ""; 
                 }).catch(error => {
                     console.error(error);
+                    // 如果出错，依然显示红色错误信息以便调试
+                    debugLog.style.color = "#ff4444";
                     debugLog.innerText = "Error: " + error.message;
                     if (error.name === 'NotAllowedError') {
                         debugLog.innerText += "\nTry tapping again!";
                     } else if (error.message.includes('404')) {
-                        debugLog.innerText += "\nFile not found. Check filename case.";
+                        debugLog.innerText += "\nFile not found.";
                     }
                 });
             }
@@ -266,7 +254,6 @@
             const f = parseInt(freqInput.value);
             const a = parseInt(ampInput.value);
 
-            // 判定区域稍微宽松一点，防止太难调
             const matched = (Math.abs(f - 11) <= 4 && Math.abs(a - 80) <= 4);
 
             if (matched && !isUnlocked) {
