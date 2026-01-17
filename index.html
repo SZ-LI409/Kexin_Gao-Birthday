@@ -134,7 +134,7 @@
         #overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.92);
+            background: rgba(0,0,0,0.95); /* 加深背景让文字更清晰 */
             flex-direction: column;
             align-items: center;
             justify-content: center;
@@ -144,7 +144,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 1s ease-in-out;
-            cursor: pointer; /* 整个层可点，作为兜底 */
+            cursor: pointer;
         }
 
         #overlay.visible {
@@ -160,28 +160,49 @@
             margin: 0;
             text-shadow: 0 0 20px var(--gold);
             padding: 0 10px;
+            margin-bottom: 20px; /* 给卡片留出空间 */
         }
         
-        /* 兜底的提示文字，默认隐藏，只有自动播放失败才显示 */
+        /* === 新增：生日祝福卡片样式 === */
+        #message-card {
+            background: rgba(255, 255, 255, 0.05); /* 极淡的背景 */
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            padding: 20px;
+            width: 70%;
+            max-width: 260px;
+            opacity: 0; /* 默认隐藏 */
+            transform: translateY(20px); /* 稍微下沉 */
+            transition: all 0.8s ease 0.5s; /* 延迟0.5秒显示，错落有致 */
+        }
+        
+        /* 卡片显示状态 */
+        #message-card.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .card-text {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 0.9rem;
+            color: #ddd;
+            line-height: 1.6;
+            margin: 0;
+            white-space: pre-line; /* 允许换行 */
+        }
+
+        /* 兜底点击提示 */
         #tap-hint {
             font-family: 'Roboto Mono', monospace;
             font-size: 12px;
             color: var(--gold);
-            margin-top: 20px;
+            margin-top: 30px;
             opacity: 0; 
             transition: opacity 0.5s;
             letter-spacing: 1px;
             border: 1px solid var(--gold);
             padding: 8px 16px;
             border-radius: 4px;
-        }
-
-        #debug-log {
-            font-family: 'Roboto Mono', monospace;
-            font-size: 10px;
-            margin-top: 10px;
-            color: #444;
-            min-height: 1.2em;
         }
     </style>
 </head>
@@ -195,6 +216,19 @@
         <canvas id="osc"></canvas>
         <div id="overlay">
             <h1 class="success-title">Happy Birthday</h1>
+            
+            <div id="message-card">
+                <p class="card-text">
+                    亲爱的可欣：
+                    
+                    愿你的每一天都像这
+                    完美的波形一样
+                    频率动人，充满能量。
+                    
+                    22岁生日快乐！
+                </p>
+            </div>
+
             <div id="tap-hint">CLICK TO START MUSIC</div>
         </div>
     </div>
@@ -222,6 +256,7 @@
         const overlay = document.getElementById('overlay');
         const bgm = document.getElementById('bgm');
         const tapHint = document.getElementById('tap-hint');
+        const messageCard = document.getElementById('message-card');
 
         let width, height, offset = 0;
         let isUnlocked = false;
@@ -233,17 +268,12 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- 核心逻辑：拖动滑块直接触发播放 ---
         function checkUnlock() {
             if (isUnlocked) return; 
-
             const f = parseInt(freqInput.value);
             const a = parseInt(ampInput.value);
             const matched = (Math.abs(f - 11) <= 4 && Math.abs(a - 80) <= 4);
-
-            if (matched) {
-                unlockAndPlay();
-            }
+            if (matched) unlockAndPlay();
         }
 
         freqInput.addEventListener('input', checkUnlock);
@@ -252,45 +282,44 @@
         function unlockAndPlay() {
             isUnlocked = true;
             
-            // 1. 尝试利用滑块拖动的交互权限直接播放
+            // 1. 尝试播放
             const playPromise = bgm.play();
 
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    // 成功：无需做任何事，音乐自然响起
-                    console.log("Auto-play success");
+                    // 自动播放成功
+                    showCard(); 
                 }).catch(error => {
-                    // 失败（通常是 iOS 较严）：显示兜底按钮
-                    console.log("Auto-play blocked, showing hint");
-                    tapHint.style.opacity = 1; // 显示“点击播放”
+                    // 自动播放失败（iOS拦截），显示点击提示
+                    tapHint.style.opacity = 1;
                 });
             }
 
-            // 2. 震动反馈 (Android)
-            if (navigator.vibrate) {
-                navigator.vibrate([50, 50, 50]);
-            }
+            if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
 
-            // 3. 显示 Happy Birthday 界面
+            // 显示遮罩层
             setTimeout(() => {
                 overlay.classList.add('visible');
             }, 300);
         }
 
-        // 兜底点击逻辑：如果自动播放失败，用户点击屏幕任意位置即可播放
-        overlay.addEventListener('click', () => {
+        // 显示祝福卡片的函数
+        function showCard() {
+            // 隐藏点击提示（如果存在）
+            tapHint.style.display = 'none';
+            // 显示卡片（带动画）
+            messageCard.classList.add('show');
+        }
+
+        // 兜底点击事件：点击后播放音乐并显示卡片
+        function manualPlay() {
             if (bgm.paused) {
                 bgm.play();
-                tapHint.style.opacity = 0; // 播放后隐藏提示
+                showCard();
             }
-        });
-        overlay.addEventListener('touchstart', (e) => {
-            // e.preventDefault(); // 不阻止默认，防止点击无效
-            if (bgm.paused) {
-                bgm.play();
-                tapHint.style.opacity = 0;
-            }
-        });
+        }
+        overlay.addEventListener('click', manualPlay);
+        overlay.addEventListener('touchstart', manualPlay);
 
         function draw() {
             ctx.clearRect(0, 0, width, height);
