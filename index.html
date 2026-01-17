@@ -13,12 +13,11 @@
         :root {
             --gold: #d4af37;
             --dark-gold: #8a7020;
-            --black: #080808;  /* 纯黑背景 */
+            --black: #080808;
             --screen-bg: #051005;
         }
 
         body {
-            /* 1. 回归纯黑背景，去掉纹理 */
             background-color: var(--black);
             color: var(--gold);
             font-family: 'Oswald', sans-serif;
@@ -52,7 +51,7 @@
             display: block;
         }
 
-        /* 示波器屏幕外框 */
+        /* 示波器屏幕 */
         #screen-frame {
             width: 88vw;
             height: 280px;
@@ -70,7 +69,6 @@
             flex-shrink: 0;
         }
 
-        /* 屏幕扫描线效果 */
         #screen-frame::after {
             content: " ";
             display: block;
@@ -132,7 +130,7 @@
             z-index: 10;
         }
 
-        /* --- 弹窗与播放器控制 --- */
+        /* 弹窗层 */
         #overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -145,7 +143,7 @@
             display: flex;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.8s ease-in-out;
+            transition: opacity 1s ease-in-out; /* 稍慢一点的淡入更优雅 */
         }
 
         #overlay.visible {
@@ -153,18 +151,17 @@
             pointer-events: auto;
         }
 
-        /* 2. 字体调整：使用 vw 单位确保不超出屏幕 */
         .success-title {
             color: #fff;
             font-family: 'Great Vibes', cursive;
-            font-size: 13vw; /* 响应式大小，防止溢出 */
+            font-size: 13vw;
             line-height: 1.2;
             margin: 0 0 20px 0;
             text-shadow: 0 0 15px var(--gold);
             padding: 0 10px;
         }
 
-        /* 3. 全新的音乐播放按钮 */
+        /* 音乐播放按钮 */
         .music-btn {
             width: 70px;
             height: 70px;
@@ -190,27 +187,29 @@
             width: 30px;
             height: 30px;
             fill: var(--gold);
-            margin-left: 4px; /* 稍微修正 Play 图标的视觉中心 */
+            margin-left: 4px; 
             transition: all 0.3s ease;
         }
 
+        /* 播放中状态：高亮 */
         .music-btn.playing {
-            box-shadow: 0 0 30px rgba(212,175,55, 0.6);
+            box-shadow: 0 0 40px rgba(212,175,55, 0.6);
             border-color: #fff;
+            background: rgba(255,255,255,0.05);
         }
 
         .music-btn.playing svg {
             fill: #fff;
-            margin-left: 0; /* Pause 图标不需要偏移 */
+            margin-left: 0; 
         }
 
         #debug-log {
             font-family: 'Roboto Mono', monospace;
             font-size: 11px;
             margin-top: 15px;
-            color: #666;
+            color: #fff; /* 白色字体 */
             min-height: 1.4em;
-            opacity: 0.7;
+            opacity: 0.8;
         }
     </style>
 </head>
@@ -261,7 +260,6 @@
         const overlay = document.getElementById('overlay');
         const bgm = document.getElementById('bgm');
         
-        // 音乐控制相关元素
         const musicBtn = document.getElementById('musicBtn');
         const playIcon = document.getElementById('play-icon');
         const pauseIcon = document.getElementById('pause-icon');
@@ -277,36 +275,69 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // 切换音乐播放状态
+        // --- 核心修改：在滑块拖动时检查解锁 ---
+        // 这样可以利用用户的“拖动”手势直接触发音频播放，避开自动播放限制
+        function checkUnlock() {
+            if (isUnlocked) return; // 已经解锁就不用检查了
+
+            const f = parseInt(freqInput.value);
+            const a = parseInt(ampInput.value);
+            const matched = (Math.abs(f - 11) <= 4 && Math.abs(a - 80) <= 4);
+
+            if (matched) {
+                unlockAndPlay();
+            }
+        }
+
+        // 绑定到 input 事件（拖动时持续触发）
+        freqInput.addEventListener('input', checkUnlock);
+        ampInput.addEventListener('input', checkUnlock);
+
+        function unlockAndPlay() {
+            isUnlocked = true;
+            
+            // 1. 尝试直接播放音乐
+            debugLog.innerText = "Loading...";
+            const playPromise = bgm.play();
+
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    // 播放成功
+                    updateButtonState(true);
+                    debugLog.innerText = ""; // 清空提示
+                }).catch(error => {
+                    // 如果自动播放被拦截（极少数情况），显示点击提示
+                    console.error(error);
+                    debugLog.style.color = "#ff4444";
+                    debugLog.innerText = "Tap button to play";
+                    // 即使失败，也先显示界面，让用户可以手动点
+                    updateButtonState(false);
+                });
+            }
+
+            // 2. 震动反馈 (Android)
+            if (navigator.vibrate) {
+                navigator.vibrate([50, 50, 50]);
+            }
+
+            // 3. 显示 UI
+            setTimeout(() => {
+                overlay.classList.add('visible');
+            }, 300);
+        }
+
+        // 手动点击按钮的逻辑
         function toggleMusic() {
             if (bgm.paused) {
-                // 尝试播放
-                debugLog.innerText = "Loading...";
-                const playPromise = bgm.play();
-                
-                if (playPromise !== undefined) {
-                    playPromise.then(() => {
-                        // 播放成功，切换图标状态
-                        updateButtonState(true);
-                        debugLog.innerText = "";
-                    }).catch(error => {
-                        console.error(error);
-                        debugLog.style.color = "#ff4444";
-                        if (error.name === 'NotAllowedError') {
-                            debugLog.innerText = "Click again to play";
-                        } else {
-                            debugLog.innerText = "Error: Check audio file";
-                        }
-                    });
-                }
+                bgm.play();
+                updateButtonState(true);
+                debugLog.innerText = "";
             } else {
-                // 暂停
                 bgm.pause();
                 updateButtonState(false);
             }
         }
 
-        // 更新按钮视觉状态
         function updateButtonState(isPlaying) {
             if (isPlaying) {
                 musicBtn.classList.add('playing');
@@ -321,53 +352,35 @@
 
         musicBtn.addEventListener('click', toggleMusic);
         musicBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault(); // 防止触发两次
+            e.preventDefault();
             toggleMusic();
         });
 
+        // 绘图循环 (仅负责视觉)
         function draw() {
             ctx.clearRect(0, 0, width, height);
 
-            // 绘制网格背景 - 淡金色
             ctx.strokeStyle = 'rgba(212, 175, 55, 0.1)';
             ctx.lineWidth = 1;
             for(let i=0; i<width; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke(); }
             for(let i=0; i<height; i+=40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke(); }
 
+            // 如果还没解锁，需要在这里获取值来画波形；如果解锁了，就保持解锁状态
             const f = parseInt(freqInput.value);
             const a = parseInt(ampInput.value);
-
-            // 解锁范围
+            // 视觉上的匹配检查 (用于改变波形颜色)
             const matched = (Math.abs(f - 11) <= 4 && Math.abs(a - 80) <= 4);
 
-            if (matched) {
-                if (!isUnlocked) {
-                    isUnlocked = true;
-                    bgm.load(); // 预加载
-                    
-                    // 【关于震动】iPhone 默认屏蔽网页震动，Android 可用
-                    // 此处保留代码以防用户是安卓，或者未来 iOS 开放权限
-                    if (navigator.vibrate) {
-                        navigator.vibrate([30, 50, 30]);
-                    }
-
-                    // 延迟显示遮罩
-                    setTimeout(() => {
-                        overlay.classList.add('visible');
-                    }, 400);
-                }
-            }
-
-            // 波形颜色：未解锁是暗金，解锁是亮绿
+            // 波形样式
+            // 解锁瞬间：亮绿 + 强发光
+            // 未解锁：暗金 + 弱发光
             ctx.strokeStyle = matched ? '#00ff00' : '#d4af37';
             ctx.lineWidth = matched ? 5 : 3;
-            // 发光效果
             ctx.shadowBlur = matched ? 20 : 5;
             ctx.shadowColor = matched ? '#00ff00' : '#d4af37';
 
             ctx.beginPath();
             for (let x = 0; x < width; x++) {
-                // 未解锁时增加噪点
                 let noise = isUnlocked ? 0 : (Math.random() - 0.5) * (30 - a/4);
                 let y = height/2 + Math.sin(x * (f/150) + offset) * (a * height/300) + noise;
                 if (x === 0) ctx.moveTo(x, y);
