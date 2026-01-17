@@ -143,7 +143,8 @@
             display: flex;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 1s ease-in-out; /* 稍慢一点的淡入更优雅 */
+            transition: opacity 1s ease-in-out;
+            cursor: pointer; /* 整个层可点，作为兜底 */
         }
 
         #overlay.visible {
@@ -156,60 +157,31 @@
             font-family: 'Great Vibes', cursive;
             font-size: 13vw;
             line-height: 1.2;
-            margin: 0 0 20px 0;
-            text-shadow: 0 0 15px var(--gold);
+            margin: 0;
+            text-shadow: 0 0 20px var(--gold);
             padding: 0 10px;
         }
-
-        /* 音乐播放按钮 */
-        .music-btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: transparent;
-            border: 3px solid var(--gold);
+        
+        /* 兜底的提示文字，默认隐藏，只有自动播放失败才显示 */
+        #tap-hint {
+            font-family: 'Roboto Mono', monospace;
+            font-size: 12px;
             color: var(--gold);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: 0 0 20px rgba(212,175,55,0.2);
-            transition: all 0.3s ease;
-            margin-top: 10px;
-        }
-
-        .music-btn:active {
-            transform: scale(0.95);
-            background: rgba(212, 175, 55, 0.1);
-        }
-
-        .music-btn svg {
-            width: 30px;
-            height: 30px;
-            fill: var(--gold);
-            margin-left: 4px; 
-            transition: all 0.3s ease;
-        }
-
-        /* 播放中状态：高亮 */
-        .music-btn.playing {
-            box-shadow: 0 0 40px rgba(212,175,55, 0.6);
-            border-color: #fff;
-            background: rgba(255,255,255,0.05);
-        }
-
-        .music-btn.playing svg {
-            fill: #fff;
-            margin-left: 0; 
+            margin-top: 20px;
+            opacity: 0; 
+            transition: opacity 0.5s;
+            letter-spacing: 1px;
+            border: 1px solid var(--gold);
+            padding: 8px 16px;
+            border-radius: 4px;
         }
 
         #debug-log {
             font-family: 'Roboto Mono', monospace;
-            font-size: 11px;
-            margin-top: 15px;
-            color: #fff; /* 白色字体 */
-            min-height: 1.4em;
-            opacity: 0.8;
+            font-size: 10px;
+            margin-top: 10px;
+            color: #444;
+            min-height: 1.2em;
         }
     </style>
 </head>
@@ -223,17 +195,7 @@
         <canvas id="osc"></canvas>
         <div id="overlay">
             <h1 class="success-title">Happy Birthday</h1>
-            
-            <button class="music-btn" id="musicBtn">
-                <svg id="play-icon" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z"/>
-                </svg>
-                <svg id="pause-icon" viewBox="0 0 24 24" style="display:none;">
-                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                </svg>
-            </button>
-            
-            <div id="debug-log"></div>
+            <div id="tap-hint">CLICK TO START MUSIC</div>
         </div>
     </div>
 
@@ -259,11 +221,7 @@
         const ampInput = document.getElementById('amp');
         const overlay = document.getElementById('overlay');
         const bgm = document.getElementById('bgm');
-        
-        const musicBtn = document.getElementById('musicBtn');
-        const playIcon = document.getElementById('play-icon');
-        const pauseIcon = document.getElementById('pause-icon');
-        const debugLog = document.getElementById('debug-log');
+        const tapHint = document.getElementById('tap-hint');
 
         let width, height, offset = 0;
         let isUnlocked = false;
@@ -275,10 +233,9 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // --- 核心修改：在滑块拖动时检查解锁 ---
-        // 这样可以利用用户的“拖动”手势直接触发音频播放，避开自动播放限制
+        // --- 核心逻辑：拖动滑块直接触发播放 ---
         function checkUnlock() {
-            if (isUnlocked) return; // 已经解锁就不用检查了
+            if (isUnlocked) return; 
 
             const f = parseInt(freqInput.value);
             const a = parseInt(ampInput.value);
@@ -289,29 +246,23 @@
             }
         }
 
-        // 绑定到 input 事件（拖动时持续触发）
         freqInput.addEventListener('input', checkUnlock);
         ampInput.addEventListener('input', checkUnlock);
 
         function unlockAndPlay() {
             isUnlocked = true;
             
-            // 1. 尝试直接播放音乐
-            debugLog.innerText = "Loading...";
+            // 1. 尝试利用滑块拖动的交互权限直接播放
             const playPromise = bgm.play();
 
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    // 播放成功
-                    updateButtonState(true);
-                    debugLog.innerText = ""; // 清空提示
+                    // 成功：无需做任何事，音乐自然响起
+                    console.log("Auto-play success");
                 }).catch(error => {
-                    // 如果自动播放被拦截（极少数情况），显示点击提示
-                    console.error(error);
-                    debugLog.style.color = "#ff4444";
-                    debugLog.innerText = "Tap button to play";
-                    // 即使失败，也先显示界面，让用户可以手动点
-                    updateButtonState(false);
+                    // 失败（通常是 iOS 较严）：显示兜底按钮
+                    console.log("Auto-play blocked, showing hint");
+                    tapHint.style.opacity = 1; // 显示“点击播放”
                 });
             }
 
@@ -320,43 +271,27 @@
                 navigator.vibrate([50, 50, 50]);
             }
 
-            // 3. 显示 UI
+            // 3. 显示 Happy Birthday 界面
             setTimeout(() => {
                 overlay.classList.add('visible');
             }, 300);
         }
 
-        // 手动点击按钮的逻辑
-        function toggleMusic() {
+        // 兜底点击逻辑：如果自动播放失败，用户点击屏幕任意位置即可播放
+        overlay.addEventListener('click', () => {
             if (bgm.paused) {
                 bgm.play();
-                updateButtonState(true);
-                debugLog.innerText = "";
-            } else {
-                bgm.pause();
-                updateButtonState(false);
+                tapHint.style.opacity = 0; // 播放后隐藏提示
             }
-        }
-
-        function updateButtonState(isPlaying) {
-            if (isPlaying) {
-                musicBtn.classList.add('playing');
-                playIcon.style.display = 'none';
-                pauseIcon.style.display = 'block';
-            } else {
-                musicBtn.classList.remove('playing');
-                playIcon.style.display = 'block';
-                pauseIcon.style.display = 'none';
+        });
+        overlay.addEventListener('touchstart', (e) => {
+            // e.preventDefault(); // 不阻止默认，防止点击无效
+            if (bgm.paused) {
+                bgm.play();
+                tapHint.style.opacity = 0;
             }
-        }
-
-        musicBtn.addEventListener('click', toggleMusic);
-        musicBtn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            toggleMusic();
         });
 
-        // 绘图循环 (仅负责视觉)
         function draw() {
             ctx.clearRect(0, 0, width, height);
 
@@ -365,15 +300,10 @@
             for(let i=0; i<width; i+=40) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, height); ctx.stroke(); }
             for(let i=0; i<height; i+=40) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(width, i); ctx.stroke(); }
 
-            // 如果还没解锁，需要在这里获取值来画波形；如果解锁了，就保持解锁状态
             const f = parseInt(freqInput.value);
             const a = parseInt(ampInput.value);
-            // 视觉上的匹配检查 (用于改变波形颜色)
             const matched = (Math.abs(f - 11) <= 4 && Math.abs(a - 80) <= 4);
 
-            // 波形样式
-            // 解锁瞬间：亮绿 + 强发光
-            // 未解锁：暗金 + 弱发光
             ctx.strokeStyle = matched ? '#00ff00' : '#d4af37';
             ctx.lineWidth = matched ? 5 : 3;
             ctx.shadowBlur = matched ? 20 : 5;
