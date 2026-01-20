@@ -10,6 +10,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Oswald:wght@300;400;500&family=Roboto+Mono:wght@300;500&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
 
     <style>
+        /* 保持原样式不变 */
         :root {
             --gold: #d4af37;
             --bright-gold: #f9d77e;
@@ -36,7 +37,6 @@
             overflow-x: hidden;
         }
 
-        /* Logo 区域 */
         .logo-container {
             margin-bottom: 25px;
             width: 55%;
@@ -53,7 +53,6 @@
             display: block;
         }
 
-        /* 示波器屏幕框架 */
         #screen-frame {
             width: 88vw;
             height: 280px;
@@ -85,7 +84,6 @@
 
         canvas { width: 100%; height: 100%; }
 
-        /* --- 重看祝福按钮 --- */
         .review-btn-container {
             height: 40px; 
             margin-bottom: 20px;
@@ -105,7 +103,7 @@
             border-radius: 2px;
             cursor: pointer;
             text-transform: uppercase;
-            opacity: 0; /* 默认隐藏 */
+            opacity: 0; 
             pointer-events: none;
             transition: all 0.6s ease;
             box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
@@ -122,7 +120,6 @@
             background: rgba(212, 175, 55, 0.2);
         }
 
-        /* 控件区域 */
         .controls {
             width: 82vw;
             display: flex;
@@ -171,7 +168,6 @@
             z-index: 10;
         }
 
-        /* 示波器内部遮罩 */
         #screen-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -236,7 +232,6 @@
             100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
         }
 
-        /* === 信件图层 === */
         #letter-layer {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -271,7 +266,7 @@
             position: relative;
             transform: scale(0.95) translateY(20px);
             transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
-            overflow: visible; /* 允许图片溢出 */
+            overflow: visible; 
         }
 
         #letter-layer.show .letter-card {
@@ -335,7 +330,6 @@
             border-color: var(--gold);
         }
 
-        /* === 拍立得照片样式 === */
         .polaroid {
             position: absolute;
             background: #fff;
@@ -357,7 +351,6 @@
             filter: sepia(20%);
         }
 
-        /* 掉落动画 */
         @keyframes dropIn {
             0% { top: -60vh; opacity: 0; transform: rotate(0deg); }
             100% { top: var(--target-top); opacity: 1; transform: rotate(var(--target-rot)); }
@@ -367,12 +360,11 @@
             animation: dropIn 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
 
-        /* === 独立 Lightbox (放大查看层) === */
         #lightbox {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.95);
-            z-index: 3000; /* 最高层级 */
+            z-index: 3000;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -392,7 +384,7 @@
             max-height: 80vh;
             border: 12px solid #fff;
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            border-bottom-width: 40px; /* 拍立得效果 */
+            border-bottom-width: 40px; 
             transform: scale(0.9);
             transition: transform 0.3s ease;
         }
@@ -424,7 +416,6 @@
         <div id="screen-overlay">
             <h1 class="success-title">Happy Birthday</h1>
             <div class="date-display">2004.01.29 - 2026.01.29</div>
-            
             <div id="tap-hint">CLICK TO START</div>
         </div>
     </div>
@@ -440,7 +431,7 @@
 
     <div id="letter-layer">
         <div class="letter-card" id="letterCard">
-            <div class="card-header">BUZHIDAOXIESHENME</div>
+            <div class="card-header">Invitation</div>
             
             <h2 class="card-title" id="cardTitle">Happy Birthday</h2>
             
@@ -448,10 +439,10 @@
                 </p>
             
             <div id="polaroid-container">
-                <div class="polaroid" id="p1" style="--target-top: -50px; --target-rot: -12deg; left: 5px;">
+                <div class="polaroid" id="p1" style="--target-top: -50px; --target-rot: -12deg; left: -20px;">
                     <img src="sea.png" alt="Sea">
                 </div>
-                <div class="polaroid" id="p2" style="--target-top: -50px; --target-rot: 10deg; left: auto; right: 10px;">
+                <div class="polaroid" id="p2" style="--target-top: -50px; --target-rot: 10deg; left: auto; right: -20px;">
                     <img src="japan.png" alt="Japan">
                 </div>
                 <div class="polaroid" id="p3" style="--target-top: 75%; --target-rot: -5deg; left: auto; right: 10px;">
@@ -492,17 +483,110 @@
         const cardText = document.getElementById('cardText');
         const closeLetterBtn = document.getElementById('closeLetterBtn');
         const polaroids = document.querySelectorAll('.polaroid');
-        
-        // Lightbox 元素
         const lightbox = document.getElementById('lightbox');
         const lightboxImg = document.getElementById('lightbox-img');
 
         let width, height, offset = 0;
         let isUnlocked = false;
         
+        // --- 1. 电流声 (Static Noise) 控制 ---
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+                this.noiseNode = null;
+                this.gainNode = null;
+                this.isPlaying = false;
+            }
+
+            init() {
+                if (this.ctx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                this.ctx = new AudioContext();
+                
+                // 创建白噪音 buffer
+                const bufferSize = this.ctx.sampleRate * 2; // 2秒
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                this.noiseBuffer = buffer;
+            }
+
+            start() {
+                if (this.isPlaying || !this.ctx) return;
+                
+                this.noiseNode = this.ctx.createBufferSource();
+                this.noiseNode.buffer = this.noiseBuffer;
+                this.noiseNode.loop = true;
+                
+                // 使用低通滤波器让声音更像老收音机
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 800; 
+
+                this.gainNode = this.ctx.createGain();
+                this.gainNode.gain.value = 0; // 初始静音
+
+                this.noiseNode.connect(filter);
+                filter.connect(this.gainNode);
+                this.gainNode.connect(this.ctx.destination);
+                
+                this.noiseNode.start();
+                this.isPlaying = true;
+            }
+
+            setVolume(val) {
+                if (this.gainNode) {
+                    // 音量微小，模仿电流底噪
+                    this.gainNode.gain.setTargetAtTime(val * 0.05, this.ctx.currentTime, 0.1);
+                }
+            }
+
+            stop() {
+                if (this.noiseNode) {
+                    this.noiseNode.stop();
+                    this.isPlaying = false;
+                }
+            }
+        }
+
+        const sfx = new SoundFX();
+
+        // 绑定触摸/点击以初始化音频上下文 (浏览器策略)
+        document.addEventListener('touchstart', () => sfx.init(), {once:true});
+        document.addEventListener('click', () => sfx.init(), {once:true});
+
+        // 拖动时播放噪音
+        const handleInput = () => {
+            if (isUnlocked) return; // 解锁后不再有杂音
+            if (!sfx.isPlaying) sfx.start();
+            // 随机音量波动
+            sfx.setVolume(0.5 + Math.random() * 0.5); 
+            checkUnlock();
+        };
+
+        const handleStop = () => {
+            if (isUnlocked) {
+                sfx.stop();
+            } else {
+                sfx.setVolume(0); // 停止拖动时静音
+            }
+        };
+
+        freqInput.addEventListener('input', handleInput);
+        ampInput.addEventListener('input', handleInput);
+        
+        freqInput.addEventListener('change', handleStop);
+        ampInput.addEventListener('change', handleStop);
+        freqInput.addEventListener('touchend', handleStop);
+        ampInput.addEventListener('touchend', handleStop);
+
+
         const contentNormal = {
             title: "Happy Birthday",
-            text: "俺不会说漂亮话\n真的真的希望可欣天天开心、身体好好的\n22岁生日快乐\n\n——Lily"
+            text: "没有官方的祝福\n只希望可欣天天开心、身体好好的\n22岁生日快乐\n\n——真心盼你好的Lily"
         };
         
         const contentTease = {
@@ -527,11 +611,10 @@
             if (matched) unlockAndPlay();
         }
 
-        freqInput.addEventListener('input', checkUnlock);
-        ampInput.addEventListener('input', checkUnlock);
-
         function unlockAndPlay() {
             isUnlocked = true;
+            sfx.stop(); // 停止杂音
+            
             const playPromise = bgm.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => { showLetter(false); }).catch(error => { tapHint.style.opacity = 1; });
@@ -564,7 +647,9 @@
         function resetPhotos() {
             polaroids.forEach(p => {
                 p.classList.remove('drop');
+                p.classList.remove('expanded'); 
             });
+            document.getElementById('lightbox').classList.remove('visible');
         }
 
         function hideLetter() {
@@ -584,28 +669,20 @@
         tapHint.addEventListener('click', manualPlay);
         screenOverlay.addEventListener('click', () => { if(bgm.paused) manualPlay(); });
 
-        // --- 全新 Lightbox 逻辑 ---
         polaroids.forEach(p => {
             p.addEventListener('click', (e) => {
-                e.stopPropagation(); // 防止点击穿透到 letterLayer 导致关闭
-                
-                // 获取当前点击照片的 img src
+                e.stopPropagation(); 
                 const src = p.querySelector('img').src;
                 lightboxImg.src = src;
-                
-                // 显示 lightbox
                 lightbox.classList.add('visible');
             });
         });
 
-        // 点击 lightbox 关闭放大查看
         lightbox.addEventListener('click', () => {
             lightbox.classList.remove('visible');
         });
 
-        // --- 按钮逻辑 ---
         letterLayer.addEventListener('click', (e) => {
-            // 只有点击空白处才关闭信件，点击照片时不关闭（虽然照片点击已被 stopPropagation 拦截，加个双保险）
             if (!e.target.closest('.polaroid')) {
                 hideLetter();
             }
