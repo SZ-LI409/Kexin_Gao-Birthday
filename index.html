@@ -133,32 +133,24 @@
         .player-cover {
             width: 320px; height: 100%; flex-shrink: 0;
             position: relative; border-right: 1px solid #222;
-            cursor: pointer; /* 增加点击手势 */
+            cursor: pointer;
         }
-.player-cover img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            opacity: 1; /* 【修改点】改为1，不再变暗 */
-            transition: transform 0.3s; /* 仅保留缩放动画 */
+        .player-cover img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            opacity: 1; transition: transform 0.3s; 
         }
-        /* 【修改点】删除了 hover 变暗的效果，改为轻微放大 */
-        .player-cover:hover img { 
-            opacity: 1; 
-            transform: scale(1.02);
-        }
+        .player-cover:hover img { opacity: 1; transform: scale(1.02); }
         
         /* 播放/暂停 大图标 */
         .play-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
-            pointer-events: none; /* 让点击穿透到 parent */
+            pointer-events: none;
         }
         .play-icon {
             width: 60px; height: 60px; fill: #fff; opacity: 0; transition: opacity 0.3s, transform 0.2s;
             filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
         }
-        /* 暂停时显示 Play 按钮，播放时隐藏 */
         .player-cover.paused .play-icon { opacity: 0.8; }
         .player-cover:active .play-icon { transform: scale(0.9); }
 
@@ -181,11 +173,9 @@
         .lyric-line {
             color: #555; text-align: center; padding: 8px 0; 
             font-family: 'Roboto Mono', sans-serif; font-size: 0.95rem; 
-            transition: all 0.5s ease-out; /* 增加柔和过渡 */
+            transition: all 0.5s ease-out;
             opacity: 0.4; line-height: 1.4;
-            width: 90%; /* 防止截断 */
-            white-space: normal; /* 允许换行 */
-            min-height: 1.4em;
+            width: 90%; white-space: normal; min-height: 1.4em;
         }
         .lyric-line.active { 
             color: #fff; font-size: 1.2rem; font-weight: 500;
@@ -202,7 +192,7 @@
             border: 2px solid var(--gold);
             box-shadow: 0 5px 20px rgba(0,0,0,0.8);
             z-index: 100;
-            display: none; /* 默认隐藏 */
+            display: none;
             align-items: center; justify-content: center;
             cursor: pointer;
             overflow: hidden;
@@ -233,7 +223,7 @@
             .lyric-line.active { font-size: 1.15rem; }
         }
 
-        /* 横屏适配 (全屏模式) */
+        /* 横屏适配 */
         @media (orientation: landscape) {
             .player-container { width: 100vw; height: 100vh; max-width: none; border-radius: 0; border: none; }
             .player-cover { width: 45%; }
@@ -360,7 +350,7 @@
 [03:30.00]I don't believe in haunted houses
 [03:37.00]But I still feel you there on the bed
 [03:45.00]I wish I hadn't said all the things I said
-`; // <--- 请粘贴完整歌词
+`;
 
         const canvas = document.getElementById('osc');
         const ctx = canvas.getContext('2d');
@@ -487,6 +477,12 @@
         const handleInput = () => {
             if (isUnlocked) return;
             if (!sfx.isPlaying) sfx.start();
+            
+            // 修复：强制唤醒 AudioContext，确保噪声能听到
+            if (sfx.ctx && sfx.ctx.state === 'suspended') {
+                sfx.ctx.resume();
+            }
+
             sfx.setVolume(0.5 + Math.random() * 0.5);
             checkUnlock();
         };
@@ -501,11 +497,18 @@
             if (matched) unlockAndPlay();
         }
 
+        // --- 核心修改区 ---
         function unlockAndPlay() {
-            isUnlocked = true; sfx.stop();
-            const playPromise = bgm.play();
-            if (playPromise !== undefined) playPromise.catch(() => tapHint.style.opacity = 1);
+            isUnlocked = true; 
+            sfx.stop(); // 停止噪声
+            
+            // 1. 视觉反馈：显示点击提示 (但不播放音乐)
+            tapHint.style.opacity = 1; 
+            
+            // 2. 震动反馈
             if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+            
+            // 3. 显示遮罩
             setTimeout(() => screenOverlay.classList.add('visible'), 300);
         }
 
@@ -544,7 +547,6 @@
 
         bgm.addEventListener('timeupdate', syncLyrics);
 
-        // 播放暂停逻辑
         function togglePlay() {
             if (bgm.paused) {
                 bgm.play();
@@ -558,18 +560,15 @@
         }
         playerCover.addEventListener('click', togglePlay);
 
-        // 退出大播放器
         playerExitBtn.addEventListener('click', () => {
             musicPlayerLayer.classList.remove('active');
             if (!reviewBtn.classList.contains('visible')) reviewBtn.classList.add('visible');
-            // 显示迷你悬浮窗
             miniPlayer.classList.add('visible');
         });
 
-        // 迷你悬浮窗点击
         miniPlayer.addEventListener('click', () => {
             musicPlayerLayer.classList.add('active');
-            miniPlayer.classList.remove('visible'); // 隐藏自己
+            miniPlayer.classList.remove('visible');
         });
 
         function dropPhotos() { resetPhotos(); setTimeout(() => document.getElementById('p1').classList.add('drop'), 400); setTimeout(() => document.getElementById('p2').classList.add('drop'), 800); setTimeout(() => document.getElementById('p3').classList.add('drop'), 1200); }
@@ -580,9 +579,17 @@
         lightbox.addEventListener('click', () => lightbox.classList.remove('visible'));
         letterLayer.addEventListener('click', (e) => { if (!e.target.closest('.polaroid') && !e.target.closest('.special-btn')) hideLetter(); });
         
-        function manualPlay() { if (bgm.paused) { bgm.play(); showLetter('normal'); } }
+        // --- 核心修改区 ---
+        function manualPlay() { 
+            // 用户点击时，强制尝试播放音乐
+            bgm.play().catch(e => console.log("Audio play error:", e));
+            // 无论音乐是否成功，都显示信件
+            showLetter('normal'); 
+        }
+
+        // 将 manualPlay 绑定到点击事件
         tapHint.addEventListener('click', manualPlay);
-        screenOverlay.addEventListener('click', () => { if(bgm.paused) manualPlay(); });
+        screenOverlay.addEventListener('click', manualPlay);
 
         function draw() {
             ctx.clearRect(0, 0, width, height);
