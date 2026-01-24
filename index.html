@@ -103,7 +103,7 @@
         .special-btn.show { display: inline-block; animation: popIn 0.5s ease; }
         @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* === 音乐播放器层 (重构版) === */
+        /* === 音乐播放器层 === */
         #music-player-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(10, 10, 10, 0.98); z-index: 5000;
@@ -113,7 +113,7 @@
         #music-player-layer.active { opacity: 1; pointer-events: auto; }
 
         .player-container {
-            width: 90%; max-width: 700px; height: 350px; /* 增加高度容纳控制栏 */
+            width: 90%; max-width: 700px; height: 380px; /* 增加高度 */
             background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
             border: 1px solid #333; border-radius: 12px;
             display: flex; overflow: hidden;
@@ -130,66 +130,88 @@
         }
         .player-exit:hover { color: var(--gold); border-color: var(--gold); background: #000; }
 
-        /* 封面去暗处理 */
         .player-cover {
             width: 320px; height: 100%; flex-shrink: 0;
             position: relative; border-right: 1px solid #222;
+            cursor: pointer; 
         }
-        .player-cover img { 
-            width: 100%; height: 100%; object-fit: cover; 
-            opacity: 1; /* 保持原画亮度 */
+        /* 封面不再变暗，保持高清 */
+        .player-cover img { width: 100%; height: 100%; object-fit: cover; opacity: 1; }
+        
+        .play-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            pointer-events: none; 
         }
+        .play-icon {
+            width: 60px; height: 60px; fill: #fff; opacity: 0; transition: opacity 0.3s, transform 0.2s;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+        /* 暂停时显示 Play 按钮 */
+        .player-cover.paused .play-icon { opacity: 0.8; }
+        .player-cover:active .play-icon { transform: scale(0.9); }
 
         .player-info {
             flex-grow: 1; padding: 25px; display: flex; flex-direction: column;
-            position: relative; width: 100%; /* Ensure width for flex child */
+            position: relative; width: 100%; overflow: hidden;
         }
 
         .song-title { color: #fff; font-family: 'Oswald', sans-serif; font-size: 1.6rem; margin: 0; letter-spacing: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .artist-name { color: var(--gold); font-family: 'Roboto Mono', monospace; font-size: 0.8rem; margin-top: 5px; opacity: 0.8; }
 
-        /* === 歌词滚动容器 (核心修改) === */
+        /* === 歌词自然滚动 === */
         .lyrics-viewport {
             margin-top: 20px; flex-grow: 1; 
             position: relative; overflow: hidden;
-            /* 遮罩，让上下边缘渐隐 */
+            /* 边缘渐隐遮罩 */
             mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
             -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%);
         }
         
         .lyrics-scroll-content {
-            position: absolute; width: 100%; top: 50%; /* 居中基准线 */
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); /* 丝滑滚动的关键 */
+            position: absolute; width: 100%; top: 50%; /* 基准线在中间 */
+            /* 关键：平滑过渡 */
+            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1); 
         }
 
         .lyric-line {
             color: #666; text-align: center; 
             font-family: 'Roboto Mono', sans-serif; font-size: 0.95rem; 
-            line-height: 2.8em; /* 固定行高，方便计算 */
-            height: 2.8em;
+            line-height: 2.8em; /* 固定行高方便计算，但文字可换行 */
+            min-height: 2.8em; /* 最小高度 */
+            height: auto; /* 允许撑开 */
+            
+            /* 防止截断的关键代码 */
+            width: 90%; 
+            margin: 0 auto;
+            white-space: pre-wrap; /* 允许换行 */
+            word-wrap: break-word; /* 允许长词换行 */
+            
             transition: all 0.4s ease; 
             opacity: 0.4; transform: scale(0.95);
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* 简单防溢出 */
         }
         
-        /* 歌词激活态 */
         .lyric-line.active { 
             color: #fff; font-size: 1.15rem; font-weight: 500;
             text-shadow: 0 0 15px rgba(212, 175, 55, 0.3); 
             opacity: 1; transform: scale(1.05);
         }
 
-        /* === 控制栏 (进度条 + 按钮) === */
+        /* === 控制栏 (进度条) === */
         .player-controls {
-            margin-top: auto; /* 推到底部 */
+            margin-top: auto; 
             padding-top: 15px;
             border-top: 1px solid #222;
+            width: 100%; /* 确保占满 */
         }
 
         .progress-container {
             display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+            /* 解决竖屏截断：增加内边距 */
+            padding: 0 5px; 
         }
-        .time-text { font-family: 'Roboto Mono', monospace; font-size: 10px; color: #666; width: 35px; }
+        .time-text { font-family: 'Roboto Mono', monospace; font-size: 10px; color: #666; width: 40px; text-align: center; }
+        
         .progress-bar-bg {
             flex-grow: 1; height: 4px; background: #333; border-radius: 2px; position: relative; cursor: pointer;
         }
@@ -212,10 +234,10 @@
             width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--gold); display: flex; align-items: center; justify-content: center; fill: var(--gold);
         }
         .play-pause-btn:hover { background: rgba(212, 175, 55, 0.1); transform: scale(1.05); }
-        .play-pause-btn svg { width: 18px; height: 18px; margin-left: 2px; } /* play icon offset */
-        .play-pause-btn.playing svg { margin-left: 0; } /* pause icon centered */
+        .play-pause-btn svg { width: 18px; height: 18px; margin-left: 2px; }
+        .play-pause-btn.playing svg { margin-left: 0; }
 
-        /* --- 迷你悬浮窗 --- */
+        /* === 迷你悬浮窗 === */
         #mini-player {
             position: fixed; bottom: 30px; right: 30px;
             width: 60px; height: 60px;
@@ -224,7 +246,7 @@
             border: 2px solid var(--gold);
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             z-index: 2000;
-            display: none; /* 默认隐藏 */
+            display: none; 
             align-items: center; justify-content: center;
             cursor: pointer;
             overflow: hidden;
@@ -248,8 +270,9 @@
         /* 移动端竖屏适配 */
         @media (max-width: 600px) and (orientation: portrait) {
             .player-container { flex-direction: column; height: 90vh; width: 90vw; max-height: none; }
-            .player-cover { width: 100%; height: 45%; border-right: none; border-bottom: 1px solid #222; }
-            .player-info { height: 55%; padding: 20px; }
+            /* 1. 缩小封面 */
+            .player-cover { width: 100%; height: 38%; border-right: none; border-bottom: 1px solid #222; }
+            .player-info { height: 62%; padding: 20px 15px; }
             .song-title { font-size: 1.4rem; }
             .lyric-line { font-size: 0.95rem; }
         }
@@ -257,12 +280,13 @@
         /* 横屏适配 (全屏模式) */
         @media (orientation: landscape) {
             .player-container { width: 100vw; height: 100vh; max-width: none; border-radius: 0; border: none; }
-            .player-cover { width: 45%; }
-            .player-info { width: 55%; padding: 40px 60px; justify-content: center; }
+            /* 4. 横屏下封面宽度调整 */
+            .player-cover { width: 40%; }
+            .player-info { width: 60%; padding: 40px 60px; justify-content: center; }
             .song-title { font-size: 2.5rem; margin-bottom: 10px; }
             .artist-name { font-size: 1.1rem; margin-bottom: 30px; }
             .lyrics-viewport { margin-bottom: 30px; }
-            .lyric-line { font-size: 1.2rem; line-height: 3em; height: 3em; }
+            .lyric-line { font-size: 1.2rem; } /* 去掉固定行高，让其自适应 */
             .lyric-line.active { font-size: 1.5rem; }
         }
 
@@ -294,7 +318,7 @@
 
     <div id="letter-layer">
         <div class="letter-card" id="letterCard">
-            <div class="card-header">BUZHIDAOXIESHENME</div>
+            <div class="card-header">Invitation</div>
             <h2 class="card-title" id="cardTitle">Happy Birthday</h2>
             <p class="letter-text" id="cardText"></p>
             <button id="musicStartBtn" class="special-btn">Listen Now</button>
@@ -313,6 +337,11 @@
             
             <div class="player-cover" id="playerCover">
                 <img src="marshall.png" alt="Album Cover">
+                <div class="play-overlay">
+                    <svg class="play-icon" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z"/>
+                    </svg>
+                </div>
             </div>
             
             <div class="player-info">
@@ -432,15 +461,14 @@
         const progressBarFill = document.getElementById('progressBarFill');
         const currTimeText = document.getElementById('currTime');
         const totalTimeText = document.getElementById('totalTime');
+        const playerCover = document.getElementById('playerCover');
 
         let width, height, offset = 0;
         let isUnlocked = false;
         let clickCount = 0;
         let hasOpenedPlayer = false; 
         let lyricsData = []; 
-        let LINE_HEIGHT = 0; // 动态计算
 
-        // --- SoundFX ---
         class SoundFX {
             constructor() { this.ctx = null; this.isPlaying = false; }
             init() {
@@ -471,7 +499,6 @@
         document.addEventListener('touchstart', () => sfx.init(), {once:true});
         document.addEventListener('click', () => sfx.init(), {once:true});
 
-        // --- 歌词处理 ---
         function parseLrc(lrc) {
             const lines = lrc.split('\n');
             const result = [];
@@ -500,19 +527,13 @@
                 div.innerText = line.text;
                 lyricsContent.appendChild(div);
             });
-            
-            // 计算行高 (需要在 DOM 渲染后)
-            setTimeout(() => {
-                const sampleLine = document.querySelector('.lyric-line');
-                if (sampleLine) LINE_HEIGHT = sampleLine.offsetHeight;
-            }, 100);
         }
 
         function syncLyrics() {
             if (!hasOpenedPlayer || !lyricsData.length) return;
             const currentTime = bgm.currentTime;
             
-            // 找到高亮行
+            // 1. 找到当前行
             let activeIndex = -1;
             for (let i = 0; i < lyricsData.length; i++) {
                 if (currentTime >= lyricsData[i].time) activeIndex = i;
@@ -520,31 +541,34 @@
             }
             if (activeIndex === -1) activeIndex = 0;
 
-            // 高亮样式
+            // 2. 高亮样式
             const lines = document.querySelectorAll('.lyric-line');
             lines.forEach((line, idx) => {
                 if (idx === activeIndex) line.classList.add('active');
                 else line.classList.remove('active');
             });
 
-            // 自然滚动：计算 transformY
-            // 目标是将 active 行居中。offset = -(activeIndex * height)
-            if (LINE_HEIGHT > 0) {
-                const offset = -(activeIndex * LINE_HEIGHT);
-                lyricsContent.style.transform = `translateY(${offset}px)`;
+            // 3. 自然滚动计算 (Smart Scrolling)
+            const activeLine = lines[activeIndex];
+            if (activeLine) {
+                // 计算 activeLine 中心点相对于 container 的偏移量
+                // 公式：LineTop + LineHeight/2  
+                const lineCenter = activeLine.offsetTop + (activeLine.offsetHeight / 2);
+                // 此时容器被 transform 移动了，我们需要反向移动，把 lineCenter 移到 Viewport 的 50% 处
+                // 但因为我们设置了 lyricsContent position: absolute; top: 50%;
+                // 所以 0px 就是正中间。我们只需要 translateY(-lineCenter) 即可让该行中心对齐 50% 基准线
+                
+                lyricsContent.style.transform = `translateY(-${lineCenter}px)`;
             }
         }
 
-        // --- 播放控制 & 进度条 ---
         function updateProgress() {
             const { currentTime, duration } = bgm;
             if (isNaN(duration)) return;
 
-            // 更新时间文本
             currTimeText.innerText = formatTime(currentTime);
             totalTimeText.innerText = formatTime(duration);
 
-            // 更新进度条
             const percent = (currentTime / duration) * 100;
             progressBarFill.style.width = `${percent}%`;
             
@@ -562,16 +586,17 @@
                 bgm.play();
                 playIcon.style.display = 'none';
                 pauseIcon.style.display = 'block';
+                playerCover.classList.remove('paused');
                 miniDisc.classList.remove('paused');
             } else {
                 bgm.pause();
                 playIcon.style.display = 'block';
                 pauseIcon.style.display = 'none';
+                playerCover.classList.add('paused');
                 miniDisc.classList.add('paused');
             }
         }
 
-        // 进度条拖动
         progressBarBg.addEventListener('click', (e) => {
             const rect = progressBarBg.getBoundingClientRect();
             const pos = (e.clientX - rect.left) / rect.width;
@@ -579,6 +604,8 @@
         });
 
         playPauseBtn.addEventListener('click', togglePlay);
+        playerCover.addEventListener('click', togglePlay); // 封面也能点
+        
         bgm.addEventListener('timeupdate', updateProgress);
         bgm.addEventListener('ended', () => {
             playIcon.style.display = 'block';
@@ -587,9 +614,9 @@
 
         // --- 核心逻辑 ---
         
-        const contentNormal = { title: "Happy Birthday", text: "想说的话好多好多好多\n但是嘴太笨了\n不如用这种形式\n有点俗套\n希望你喜欢\n22岁生日快乐\n\n——Lily" };
-        const contentTease = { title: "Surprise?", text: "还要？\n你也太贪得无厌了。\n\n这回真没有了\n( ˘•ω•˘ )" };
-        const contentMusicOffer = { title: "One More Thing", text: "还想要惊喜？\n好吧，那满足你\n请聆听我精心挑选的音乐\n配合Marshall音箱（很重要）" };
+        const contentNormal = { title: "Happy Birthday", text: "没有官方的祝福\n只希望可欣天天开心、身体好好的\n22岁生日快乐\n\n——真心盼你好的Lily" };
+        const contentTease = { title: "Surprise?", text: "还想要惊喜？\n你也太贪得无厌了。\n\n真没有了\n( ˘•ω•˘ )" };
+        const contentMusicOffer = { title: "One More Thing", text: "还想要惊喜？\n好吧，那满足你。\n请聆听我给你精心挑选的音乐\n配合Marshall音箱。" };
 
         function resize() { width = canvas.width = canvas.offsetWidth; height = canvas.height = canvas.offsetHeight; }
         window.addEventListener('resize', resize); resize();
@@ -662,29 +689,26 @@
             bgm.src = "Cody Fry&Abby Cates - Things You Said.mp3"; 
             bgm.load();
             
-            // UI 更新
             musicPlayerLayer.classList.add('active');
             playIcon.style.display = 'none';
             pauseIcon.style.display = 'block';
             
-            initLyricsData(); // 初始化歌词DOM
+            initLyricsData(); 
             
             bgm.play().then(() => {
                 miniDisc.classList.remove('paused');
             });
         });
 
-        // 退出播放器 -> 显示 Mini Player
         playerExitBtn.addEventListener('click', () => {
             musicPlayerLayer.classList.remove('active');
             if (!reviewBtn.classList.contains('visible')) reviewBtn.classList.add('visible');
             miniPlayer.classList.add('visible');
         });
 
-        // 点击 Mini Player -> 恢复大播放器
         miniPlayer.addEventListener('click', () => {
             musicPlayerLayer.classList.add('active');
-            miniPlayer.classList.remove('visible'); // 隐藏自己
+            miniPlayer.classList.remove('visible');
         });
 
         function dropPhotos() { resetPhotos(); setTimeout(() => document.getElementById('p1').classList.add('drop'), 400); setTimeout(() => document.getElementById('p2').classList.add('drop'), 800); setTimeout(() => document.getElementById('p3').classList.add('drop'), 1200); }
