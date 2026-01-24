@@ -194,18 +194,40 @@
         .lyrics-container::-webkit-scrollbar { display: none; }
 
         .lyric-line {
-            color: #666; text-align: center; padding: 10px 0; 
-            font-family: 'Roboto Mono', sans-serif; font-size: 0.95rem; 
+            color: #666; 
+            text-align: center; 
+            padding: 10px 0; 
+            font-family: 'Roboto Mono', sans-serif; 
+            
+            /* 1. 设定一个固定的基准字号，不再在 active 中修改 font-size */
+            font-size: 1rem; 
+            
+            /* 2. 默认状态稍微缩小一点，或者保持原样 */
+            transform: scale(1); 
             transition: all 0.4s ease-out; 
-            opacity: 0.5; line-height: 1.4;
+            opacity: 0.5; 
+            line-height: 1.6; /* 稍微加大行高防止缩放后重叠 */
             width: 90%; 
             white-space: normal;
-            flex-shrink: 0; /* 防止被挤压 */
+            flex-shrink: 0;
+            
+            /* 3. 关键：添加这一行，让变换中心在中间，防止缩放偏离 */
+            transform-origin: center center;
         }
+        
+        /* 修改 .lyric-line.active 样式 */
         .lyric-line.active { 
-            color: #fff; font-size: 1.25rem; font-weight: 500;
+            color: #fff; 
+            
+            /* 4. 删除 font-size 修改 */
+            /* font-size: 1.25rem;  <-- 删除这行 */
+            
+            font-weight: 500;
             text-shadow: 0 0 15px rgba(212, 175, 55, 0.4); 
-            opacity: 1; transform: scale(1.05);
+            opacity: 1; 
+            
+            /* 5. 只通过 scale 放大，这样不会挤压周围的元素 */
+            transform: scale(1.3); 
         }
 
         /* --- 迷你悬浮窗 (Mini Player) --- */
