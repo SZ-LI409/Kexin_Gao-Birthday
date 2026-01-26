@@ -287,8 +287,8 @@
                 </div>
             </div>
             <div class="player-info">
-                <h3 class="song-title">Things You Said</h3>
-                <p class="artist-name">Cody Fry & Abby Cates</p>
+                <h3 class="song-title">二十二</h3>
+                <p class="artist-name">Shengzhen Li &Artificial Intelligence Cates</p>
                 <div class="lyrics-container" id="lyricsContainer"></div>
             </div>
         </div>
@@ -308,48 +308,55 @@
     </audio>
 
     <script>
-        const lrcContent = `[00:00.00]Things You Said - Cody Fry/Abby Cates
-[00:01.00]Lyrics by：Cody Fry
-[00:02.00]   
-[00:02.00]Composed by：Cody Fry
-[00:03.00]   
-[00:03.00]Arranged by：Cody Fry
-[00:04.00]   
-[00:04.00]Produced by：Chad Copelin
+        const lrcContent = `[00:00.00]二十二 
+[00:02.00]词：陶喆/娃娃
+[00:03.00]
+[00:03.00]曲：陶喆
+[00:04.00]
+[00:04.00]编曲：陶喆
+[00:05.00]
+[00:05.00]瞎改：李升臻
 [00:06.00]
-[00:06.00]To：Kexin
-[00:17.00]   
-[00:17.00]I was walking in the woods one day
-[00:21.00]Tryna keep the ghosts at bay
-[00:25.00]Then I thought I saw your face but it was just leaves
-[00:32.00]I see you in the strangest things
-[00:35.00]Your voice in every bird that sings
-[00:39.00]Can they hear it echoing or is that just me
-[00:48.00]I don't believe in haunted houses
-[00:54.00]But I still see you there on the bed
-[01:02.00]You didn't leave me much but the things you said
-[01:11.00]They stayed they stayed
-[01:23.00]I was driving through the streets one night
-[01:27.00]At the corner with the bar you like
-[01:31.00]I thought I saw the car you drive but it wasn't green
-[01:38.00]These neighborhoods all look the same
-[01:42.00]That's why you had to move away
-[01:46.00]When people ask that's what I say
-[01:48.00]But they know I'm lying
-[01:54.00]I don't know who lives in these houses
-[02:01.00]But you still live inside of my head
-[02:09.00]You didn't leave me much but the things you said
-[02:17.00]They stayed they stayed
-[02:29.00]I still see you
-[02:33.00]You still see me
-[02:37.00]But we don't see each other anymore
-[02:44.00]I still love you
-[02:48.00]You still love me
-[02:52.00]We can't love each other anymore
-[02:58.00]Can we
-[03:30.00]I don't believe in haunted houses
-[03:37.00]But I still feel you there on the bed
-[03:45.00]I wish I hadn't said all the things I said
+[00:06.00]To：Kexin  
+[00:15.38](Da-da-da-na-na-na)
+[00:37.10]春天是她最爱的季节
+[00:41.44]当微风随意吹乱她的头发
+[00:46.41]她并不在意身边世界的吵杂
+[00:51.36]只想着自己生命中的变化
+[00:57.62]还有十五分钟才午休
+[01:02.30]从早到晚没有想象中那么好过
+[01:07.37]安定的日子不一定就是幸福
+[01:12.62]忘不掉她在心里做过的梦
+[01:18.60]她今年农历三月六号刚满二十二
+[01:23.51]刚甩开课本要离开家看看这世界
+[01:28.43]却发现许多烦恼要面对
+[01:39.43]她常会向往能回到那年她一十二
+[01:44.64]只需要好好上学 生活单纯没忧愁
+[01:49.47]她就像一朵蓓蕾 满怀希望
+[02:00.78]秋天是忽然间就来临
+[02:04.62]青春虽然有本钱可以洒脱
+[02:09.67]一场恋爱二十二个月后结束
+[02:14.72]才知道有些感情不值得赌
+[02:20.72]九月天气还是有点热
+[02:25.14]她想公车再不来就走一走路
+[02:30.27]她开始明白等待未必有结果
+[02:35.33]一个人也能走上梦的旅途
+[02:41.28]她今年农历三月六号刚满二十二
+[02:46.24]刚甩开课本 要离开家看看这世界
+[02:50.85]却发现 许多烦恼 要面对
+[03:01.73]她常会向往能回到那年她一十二
+[03:06.83]只需要好好上学 生活单纯没忧愁
+[03:11.32]她一直满怀希望
+[03:17.03]人生偶尔会走上一条陌路
+[03:22.14]像是没有指标的地图（沒有地圖)
+[03:26.98]别让她们说你该知足
+[03:31.93]只有你知道什么是你的幸福
+[03:57.58]她常会向往能回到那年她一十二
+[04:02.44]只需要好好上学生活单纯没忧愁
+[04:07.57]她笑着想过未来
+[04:12.01]她应该得到幸福
+[04:15.12]如此的简单的梦
+[04:22.32]有没有实现
 `;
 
         const canvas = document.getElementById('osc');
@@ -466,7 +473,7 @@
 
         const contentNormal = { title: "Happy Birthday", text: "想说的话好多好多好多\n但是嘴太笨了，不如用这种方式\n\有点老土，希望你喜欢\n可欣，22岁生日快乐\n\n——Lily" };
         const contentTease = { title: "Surprise?", text: "还要？\n你也太贪了\n\n这回真没有了\n( ˘•ω•˘ )" };
-        const contentMusicOffer = { title: "One More Thing", text: "还想要惊喜？\n好吧，满足你\n请聆听我精心挑选的音乐\n配合Marshall音箱（很重要）" };
+        const contentMusicOffer = { title: "One More Thing", text: "还想要惊喜？\n好吧，满足你\n请聆听我精心改编的音乐\n配合Marshall音箱（很重要）" };
 
         function resize() { width = canvas.width = canvas.offsetWidth; height = canvas.height = canvas.offsetHeight; }
         window.addEventListener('resize', resize); resize();
@@ -523,7 +530,7 @@
             hasOpenedPlayer = true;
             letterLayer.classList.remove('show');
             bgm.pause();
-            bgm.src = "Cody Fry&Abby Cates - Things You Said.mp3"; 
+            bgm.src = ershier_Remix.mp3"; 
             initLyricsData(); 
             bgm.load();
             bgm.play().then(() => {
